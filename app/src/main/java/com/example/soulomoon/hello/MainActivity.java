@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Build;
+import android.os.StrictMode;
 import android.provider.Telephony;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
@@ -16,6 +17,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,17 +28,21 @@ import static android.provider.AlarmClock.EXTRA_MESSAGE;
 
 
 public class MainActivity extends AppCompatActivity {
+    private static final int MY_PERMISSIONS_REQUEST_INTERNET = 412;
     public static String EXTRA_MESSAGE;
     private static final int MY_PERMISSIONS_REQUEST_READ_SMS = 401;
     private static final int MY_PERMISSIONS_REQUEST_RECEIVE_SMS = 94;
+
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getPermissionSms();
-        Log.i("获取权限", "获取监听手机短信权限");
+        Log.i("获取权限", "获取监听权限");
         setContentView(R.layout.activity_main);
+//        sendSocket();
+
 //        List<String> text = getAllSmsFromProvider();
 //        int x = text.size();
 //        String y = text.get(0);
@@ -78,16 +86,51 @@ public class MainActivity extends AppCompatActivity {
         String y = text.get(0);
         for (String i : text)
             Log.d("内容:", i);
+
+        Log.d("内容:", "给我权限发送socket");
+        sendSocket();
+        Log.d("内容:", "socket sended");
+
 //        Intent intent = new Intent(this, DisplayMessageActivity.class);
 //        EditText editText = (EditText) findViewById(R.id.edit_message);
 //        String message = editText.getText().toString();
 //        intent.putExtra(EXTRA_MESSAGE, message);
 //        startActivity(intent);
     }
+    public void sendSocket() {
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+
+        StrictMode.setThreadPolicy(policy);
+        try {
+            String ip = "10.0.2.2";
+            Log.d("", "trying to build connection");
+            Socket soc= new Socket(ip,6101);
+            Log.d("", "socket builded");
+
+            String toSend= "We are going to send this line";
+            byte[] buffer= toSend.getBytes("UTF-8");//Encoding in UTF-8 system
+
+            DataOutputStream dos= new DataOutputStream(soc.getOutputStream());//gets the output Stream
+
+            dos.write(buffer,0,buffer.length);//writes complete buffer
+            dos.writeBytes("\n");// A fancy new line
+            dos.flush();//flush the data
+            dos.close();
+
+            soc.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public void getPermissionSms() {
         // Here, thisActivity is the current activity
         MainActivity thisActivity = this;
+        Log.d("", "getting permision begin");
+        ActivityCompat.requestPermissions(thisActivity,
+                new String[]{Manifest.permission.INTERNET},
+                MY_PERMISSIONS_REQUEST_INTERNET);
+
         if (ContextCompat.checkSelfPermission(thisActivity,
                 Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -140,12 +183,29 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return;
             }
-            case MY_PERMISSIONS_REQUEST_RECEIVE_SMS: {
+//            case MY_PERMISSIONS_REQUEST_RECEIVE_SMS: {
+//                // If request is cancelled, the result arrays are empty.
+//                if (grantResults.length > 0
+//                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//
+//                    Log.d("内容:", "给我权限监听手机短信接收");
+//                    // permission was granted, yay! Do the
+//                    // contacts-related task you need to do.
+//
+//                } else {
+//
+//                    // permission denied, boo! Disable the
+//                    // functionality that depends on this permission.
+//                }
+//                return;
+//            }
+            case MY_PERMISSIONS_REQUEST_INTERNET: {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    Log.d("内容:", "给我权限监听手机短信接收");
+
+
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
 
