@@ -6,6 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.StrictMode;
 import android.provider.Telephony;
@@ -17,9 +20,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
+
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,23 +44,65 @@ public class MainActivity extends AppCompatActivity {
     public static String EXTRA_MESSAGE;
     private static final int MY_PERMISSIONS_REQUEST_READ_SMS = 401;
     private static final int MY_PERMISSIONS_REQUEST_RECEIVE_SMS = 94;
+    //to contain instance of MainActivity
+    private static MainActivity ins;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ins = this;
+
         getPermissionSms();
 
         Log.i("获取权限", "获取监听权限");
         setContentView(R.layout.activity_main);
-//        sendSocket();
 
-//        List<String> text = getAllSmsFromProvider();
-//        int x = text.size();
-//        String y = text.get(0);
-//        for (String i : text)
-//            Log.d("内容:", i);
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    }
+
+    /**
+     * Called when the user clicks the Send button
+     */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public void sendMessage(View view) {
+        sendSocketMessage();
+
+//        sendMessageToSocket();
+//        Intent intent = new Intent(this, DisplayMessageActivity.class);
+//        EditText editText = (EditText) findViewById(R.id.edit_message);
+//        String message = editText.getText().toString();
+//        intent.putExtra(EXTRA_MESSAGE, message);
+//        startActivity(intent);
+    }
+
+    public void sendSocketMessage() {
+        new sendSocketTask().execute();
+    }
+
+    private class sendSocketTask extends AsyncTask<Void, Void, String> {
+        /** The system calls this to perform work in a worker thread and
+         * delivers it the parameters given to AsyncTask.execute() */
+        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+        protected String doInBackground(Void... params) {
+            String newText = sendMessageToSocket();
+            return newText;
+        }
+
+        /** The system calls this to perform work in the UI thread and delivers
+         * the result from doInBackground() */
+        protected void onPostExecute(String result) {
+            TextView edit_message = (TextView) findViewById(R.id.edit_message);
+            edit_message.setText(result);
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -61,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         ContentResolver cr = context.getContentResolver();
 
         Cursor c = cr.query(Telephony.Sms.Inbox.CONTENT_URI, // Official CONTENT_URI from docs
-                new String[] { Telephony.Sms.Inbox.BODY }, // Select body text
+                new String[]{Telephony.Sms.Inbox.BODY}, // Select body text
                 null,
                 null,
                 Telephony.Sms.Inbox.DEFAULT_SORT_ORDER); // Default sort order
@@ -81,111 +133,56 @@ public class MainActivity extends AppCompatActivity {
         return lstSms;
     }
 
-    /** Called when the user clicks the Send button */
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    public void sendMessage(View view) {
-        Context activity = this;
-        List<String> text = getAllSmsFromProvider(activity);
+    public String sendMessageToSocket() {
+        List<String> text = getAllSmsFromProvider(this);
 
-//        int x = text.size();
         String newText = text.get(0);
         Log.d("1", newText);
-//        for (String i : text)
-//            Log.d("内容:", i);
 
-        Log.d("内容:", "给我权限发送socket");
-        sendSocket(newText);
-        Log.d("内容:", "socket sended");
+        Log.d("内容:", "给我发送socket");
+        String result = sendSocket(newText);
+        Log.d("内容:", "socket完成");
 
-//        Intent intent = new Intent(this, DisplayMessageActivity.class);
-//        EditText editText = (EditText) findViewById(R.id.edit_message);
-//        String message = editText.getText().toString();
-//        intent.putExtra(EXTRA_MESSAGE, message);
-//        startActivity(intent);
+
+        return result;
     }
-    public static void sendSocket(String newText) {
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 
-        StrictMode.setThreadPolicy(policy);
+    public static String sendSocket(String newText) {
+//        for allowing thread unsafe
+//        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+//        StrictMode.setThreadPolicy(policy);
+        int timeout = 20000;
         try {
-            String ip = "192.168.1.129";
+            String ip = "10.0.2.2";
+            Socket soc = new Socket();
+            //set time out
             Log.d("", "trying to build connection");
-            Socket soc= new Socket(ip,6101);
+            soc.connect(new InetSocketAddress(ip, 6101), timeout);
             Log.d("", "socket builded");
 
 //            String toSend= "We are going to send this line";
-            String toSend= newText;
-            byte[] buffer= toSend.getBytes("UTF-8");//Encoding in UTF-8 system
+            String toSend = newText;
+            byte[] buffer = toSend.getBytes("UTF-8");//Encoding in UTF-8 system
 
-            DataOutputStream dos= new DataOutputStream(soc.getOutputStream());//gets the output Stream
+            DataOutputStream dos = new DataOutputStream(soc.getOutputStream());//gets the output Stream
 
-            dos.write(buffer,0,buffer.length);//writes complete buffer
+            dos.write(buffer, 0, buffer.length);//writes complete buffer
             dos.writeBytes("\n");// A fancy new line
             dos.flush();//flush the data
-            dos.close();
 
+            dos.close();
             soc.close();
+
+            Log.d("内容:", "socket sended");
+            return newText;
         } catch (IOException e) {
             e.printStackTrace();
+//            String hashCode = Integer.toString(e.hashCode());
+            Log.d("", "Socket fails," + "timeout: " + Integer.toString(timeout));
+//            Log.d("", "Socket fails," + "hashCode: " + hashCode);
+            return "socket server没有打开";
         }
-    }
-
-    public void getPermissionSms2() {
-        // No explanation needed, we can request the permission.
-        MainActivity thisActivity = this;
-        Log.d("", "getting permision begin2");
-        ActivityCompat.requestPermissions(thisActivity,
-                new String[]{Manifest.permission.READ_SMS},
-                MY_PERMISSIONS_REQUEST_READ_SMS);
-    }
-
-    public void getPermissionSms3() {
-        MainActivity thisActivity = this;
-        Log.d("", "getting permision begin2");
-
-        ActivityCompat.requestPermissions(thisActivity,
-                new String[]{Manifest.permission.RECEIVE_SMS},
-                MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
-    }
-    public void getPermissionSms() {
-        // Here, thisActivity is the current activity
-        MainActivity thisActivity = this;
-        Log.d("", "getting permision begin");
-        ActivityCompat.requestPermissions(thisActivity,
-                new String[]{Manifest.permission.INTERNET},
-                MY_PERMISSIONS_REQUEST_INTERNET);
-
-
-
-
-
-//        if (ContextCompat.checkSelfPermission(thisActivity,
-//                Manifest.permission.READ_SMS)
-//                != PackageManager.PERMISSION_GRANTED) {
-//
-//            // Should we show an explanation?
-//            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
-//                    Manifest.permission.READ_SMS)) {
-//
-//                // Show an expanation to the user *asynchronously* -- don't block
-//                // this thread waiting for the user's response! After the user
-//                // sees the explanation, try again to request the permission.
-//
-//            } else {
-//
-//                // No explanation needed, we can request the permission.
-//                ActivityCompat.requestPermissions(thisActivity,
-//                        new String[]{Manifest.permission.READ_SMS},
-//                        MY_PERMISSIONS_REQUEST_READ_SMS);
-//
-//                // MY_PERMISSIONS_REQUEST_READ_SMS is an
-//                // app-defined int constant. The callback method gets the
-//                // result of the request.
-//                ActivityCompat.requestPermissions(thisActivity,
-//                        new String[]{Manifest.permission.RECEIVE_SMS},
-//                        MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
-//            }
-//        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -235,7 +232,6 @@ public class MainActivity extends AppCompatActivity {
                     getPermissionSms2();
 
 
-
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
 
@@ -252,10 +248,99 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void getPermissionSms2() {
+        Log.d("", "getting permision begin2");
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.READ_SMS},
+                MY_PERMISSIONS_REQUEST_READ_SMS);
+    }
+
+    public void getPermissionSms3() {
+        Log.d("", "getting permision begin2");
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.RECEIVE_SMS},
+                MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
+    }
+
+    public void getPermissionSms() {
+        Log.d("", "getting permision begin");
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.INTERNET},
+                MY_PERMISSIONS_REQUEST_INTERNET);
 
 
+//        if (ContextCompat.checkSelfPermission(thisActivity,
+//                Manifest.permission.READ_SMS)
+//                != PackageManager.PERMISSION_GRANTED) {
+//
+//            // Should we show an explanation?
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
+//                    Manifest.permission.READ_SMS)) {
+//
+//                // Show an expanation to the user *asynchronously* -- don't block
+//                // this thread waiting for the user's response! After the user
+//                // sees the explanation, try again to request the permission.
+//
+//            } else {
+//
+//                // No explanation needed, we can request the permission.
+//                ActivityCompat.requestPermissions(thisActivity,
+//                        new String[]{Manifest.permission.READ_SMS},
+//                        MY_PERMISSIONS_REQUEST_READ_SMS);
+//
+//                // MY_PERMISSIONS_REQUEST_READ_SMS is an
+//                // app-defined int constant. The callback method gets the
+//                // result of the request.
+//                ActivityCompat.requestPermissions(thisActivity,
+//                        new String[]{Manifest.permission.RECEIVE_SMS},
+//                        MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
+//            }
+//        }
+    }
 
 
+    /**
+     * for returning the MainActivity running Instance
+     *
+     * @return
+     */
+    public static MainActivity getInstance() {
+        return ins;
+    }
 
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Main Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
+    }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        AppIndex.AppIndexApi.start(client, getIndexApiAction());
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction());
+        client.disconnect();
+    }
 }
