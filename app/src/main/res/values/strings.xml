@@ -3,4 +3,6 @@
     <string name="app_name">My First App</string>
     <string name="edit_message">Enter a message</string>
     <string name="button_send">Send</string>
+    <string name="socket_message">socket_message: </string>
+    <string name="socket_message_value">Socket未连接</string>
 </resources>

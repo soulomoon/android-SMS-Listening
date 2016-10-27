@@ -23,7 +23,6 @@ public class BroadCast extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
 
         SystemClock.sleep(1000);
-
         MainActivity.getInstance().sendSocketMessage(); //get instance and send socket
 
         Log.d("broadcast", "我操居然接收到广播了");

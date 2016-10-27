@@ -4,16 +4,41 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal">
-    <EditText android:id="@+id/edit_message"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="@string/edit_message" />
+    android:orientation="vertical">
 
-    <Button
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/button_send"
-        android:onClick="sendMessage" />
+        android:layout_height="wrap_content">
+
+        <EditText android:id="@+id/edit_message"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="@string/edit_message" />
+
+        <Button android:id="@+id/button_send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/button_send"
+            android:onClick="sendMessage" />
+    </LinearLayout>
+
+    <LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+        <TextView android:id="@+id/socket_message"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/socket_message"
+            android:padding="20dp"
+            />
+        <TextView android:id="@+id/socket_message_value"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/socket_message_value" />
+    </LinearLayout>
+
 </LinearLayout>
