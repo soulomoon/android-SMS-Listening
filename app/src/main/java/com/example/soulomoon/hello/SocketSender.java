@@ -25,7 +25,10 @@ enum SocketSender {
         String result = null;
         final int timeout = 5000;
         try (Socket soc = new Socket()) {
-            final InetSocketAddress address = new InetSocketAddress("10.0.0.3", 6101);
+//        final String ip = "10.0.2.2";
+//            final String ip = "192.168.1.129";
+            final String ip = "10.246.126.120";
+            final InetSocketAddress address = new InetSocketAddress(ip , 6101);
             soc.connect(address, timeout);
             result = writToSocket(newText, soc);
         } catch (final UnsupportedEncodingException e) {

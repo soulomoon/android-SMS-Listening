@@ -40,7 +40,12 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(final Context context, final Intent intent) {
             // internet lost alert dialog method call from here...
             final String text = BroadCast.getLatestMsg(context);
-            sendSocketMessage(text);
+            final String matcher = "登录广东4A";
+
+            if (text.contains(matcher)) {
+                
+                sendSocketMessage(text);
+            }
         }
     };
     private boolean m_socketSentLocked = true;
@@ -258,6 +263,7 @@ public class MainActivity extends AppCompatActivity {
         @RequiresApi(api = Build.VERSION_CODES.KITKAT)
         protected final String doInBackground(final String... params) {
             Log.i("", "Thread two");
+
             synchronized (m_monitorObj) {
                 m_testLocked = true;
                 while (m_socketSentLocked) {
@@ -271,6 +277,7 @@ public class MainActivity extends AppCompatActivity {
             final String text = params[0];
             final String result = SocketSender.sendSocket(text);
             publishProgress(result);
+
             synchronized (m_monitorObj) {
 //              lock itself again
                 m_socketSentLocked = true;
